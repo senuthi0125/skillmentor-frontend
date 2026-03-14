@@ -4,44 +4,65 @@ import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PaymentPage from "@/pages/PaymentPage";
+import MentorProfilePage from "@/pages/MentorProfilePage";
+import AdminLayout from "@/components/admin/AdminLayout";
+import AdminOverviewPage from "./components/admin/AdminOverviewPage";
+import ManageBookingsPage from "./components/admin/ManageBookingsPage";
+import CreateMentorPage from "./components/admin/CreateMentorPage";
+import CreateSubjectPage from "./components/admin/CreateSubjectPage";
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 
 function App() {
   return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <>
-                <SignedIn>
-                  <DashboardPage />
-                </SignedIn>
-                <SignedOut>
-                  <LoginPage />
-                </SignedOut>
-              </>
-            }
-          />
-          <Route
-            path="/payment/:sessionId"
-            element={
-              <>
-                <SignedIn>
-                  <PaymentPage />
-                </SignedIn>
-                <SignedOut>
-                  <LoginPage />
-                </SignedOut>
-              </>
-            }
-          />
-          <Route path="*" element={<LoginPage />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminOverviewPage />} />
+          <Route path="bookings" element={<ManageBookingsPage />} />
+          <Route path="mentors/create" element={<CreateMentorPage />} />
+          <Route path="subjects/create" element={<CreateSubjectPage />} />
+        </Route>
+
+        <Route
+          path="*"
+          element={
+            <Layout>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/mentors/:mentorId" element={<MentorProfilePage />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <>
+                      <SignedIn>
+                        <DashboardPage />
+                      </SignedIn>
+                      <SignedOut>
+                        <LoginPage />
+                      </SignedOut>
+                    </>
+                  }
+                />
+                <Route
+                  path="/payment/:sessionId"
+                  element={
+                    <>
+                      <SignedIn>
+                        <PaymentPage />
+                      </SignedIn>
+                      <SignedOut>
+                        <LoginPage />
+                      </SignedOut>
+                    </>
+                  }
+                />
+                <Route path="*" element={<LoginPage />} />
+              </Routes>
+            </Layout>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 }
