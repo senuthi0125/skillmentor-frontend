@@ -1,13 +1,27 @@
-import type { Enrollment, Mentor, AdminSession, CreateMentorPayload, CreateSubjectPayload } from "@/types";
+import type {
+  Enrollment,
+  Mentor,
+  AdminSession,
+  CreateMentorPayload,
+  CreateSubjectPayload,
+} from "@/types";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
 
+type GetTokenFn = (options?: { template?: string }) => Promise<string | null>;
+
 async function fetchWithAuth(
   endpoint: string,
-  token: string,
+  getToken: GetTokenFn,
   options: RequestInit = {},
 ): Promise<Response> {
+  const token = await getToken({ template: "skillmentor-auth" });
+
+  if (!token) {
+    throw new Error("Authentication token not found. Please sign in again.");
+  }
+
   const res = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
@@ -19,11 +33,19 @@ async function fetchWithAuth(
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
+
     try {
       const cloned = res.clone();
       const error = await cloned.json();
       message = error.message || error.error || message;
-    } catch {}
+    } catch {
+      // ignore JSON parse errors
+    }
+
+    if (res.status === 401) {
+      throw new Error("Your session has expired. Please sign in again.");
+    }
+
     throw new Error(message);
   }
 
@@ -38,13 +60,17 @@ export async function getPublicMentors(
   const res = await fetch(
     `${API_BASE_URL}/api/v1/mentors?page=${page}&size=${size}`,
   );
-  if (!res.ok) throw new Error("Failed to fetch mentors");
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch mentors");
+  }
+
   return res.json();
 }
 
 // Enrollments
 export async function enrollInSession(
-  token: string,
+  getToken: GetTokenFn,
   data: {
     mentorId: number;
     subjectId: number;
@@ -52,24 +78,27 @@ export async function enrollInSession(
     durationMinutes?: number;
   },
 ): Promise<Enrollment> {
-  const res = await fetchWithAuth("/api/v1/sessions/enroll", token, {
+  const res = await fetchWithAuth("/api/v1/sessions/enroll", getToken, {
     method: "POST",
     body: JSON.stringify(data),
   });
+
   return res.json();
 }
 
-export async function getMyEnrollments(token: string): Promise<Enrollment[]> {
-  const res = await fetchWithAuth("/api/v1/sessions/my-sessions", token);
+export async function getMyEnrollments(
+  getToken: GetTokenFn,
+): Promise<Enrollment[]> {
+  const res = await fetchWithAuth("/api/v1/sessions/my-sessions", getToken);
   return res.json();
 }
 
 export async function submitSessionReview(
-  token: string,
+  getToken: GetTokenFn,
   sessionId: number,
   data: { rating: number; review: string },
 ): Promise<void> {
-  await fetchWithAuth(`/api/v1/sessions/${sessionId}/review`, token, {
+  await fetchWithAuth(`/api/v1/sessions/${sessionId}/review`, getToken, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -77,59 +106,96 @@ export async function submitSessionReview(
 
 export async function getMentorProfile(mentorId: number) {
   const res = await fetch(`${API_BASE_URL}/api/v1/mentors/${mentorId}`);
-  if (!res.ok) throw new Error("Failed to fetch mentor profile");
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch mentor profile");
+  }
+
   return res.json();
 }
 
-
-export async function adminGetAllSessions(token: string): Promise<AdminSession[]> {
-  const res = await fetchWithAuth("/api/v1/admin/sessions", token);
+export async function adminGetAllSessions(
+  getToken: GetTokenFn,
+): Promise<AdminSession[]> {
+  const res = await fetchWithAuth("/api/v1/admin/sessions", getToken);
   return res.json();
 }
 
-export async function adminConfirmPayment(token: string, sessionId: number): Promise<AdminSession> {
-  const res = await fetchWithAuth(`/api/v1/admin/sessions/${sessionId}/confirm-payment`, token, {
-    method: "PATCH",
-  });
+export async function adminConfirmPayment(
+  getToken: GetTokenFn,
+  sessionId: number,
+): Promise<AdminSession> {
+  const res = await fetchWithAuth(
+    `/api/v1/admin/sessions/${sessionId}/confirm-payment`,
+    getToken,
+    {
+      method: "PATCH",
+    },
+  );
+
   return res.json();
 }
 
-export async function adminMarkComplete(token: string, sessionId: number): Promise<AdminSession> {
-  const res = await fetchWithAuth(`/api/v1/admin/sessions/${sessionId}/complete`, token, {
-    method: "PATCH",
-  });
+export async function adminMarkComplete(
+  getToken: GetTokenFn,
+  sessionId: number,
+): Promise<AdminSession> {
+  const res = await fetchWithAuth(
+    `/api/v1/admin/sessions/${sessionId}/complete`,
+    getToken,
+    {
+      method: "PATCH",
+    },
+  );
+
   return res.json();
 }
 
 export async function adminSetMeetingLink(
-  token: string,
+  getToken: GetTokenFn,
   sessionId: number,
   meetingLink: string,
 ): Promise<AdminSession> {
-  const res = await fetchWithAuth(`/api/v1/admin/sessions/${sessionId}/meeting-link`, token, {
-    method: "PATCH",
-    body: JSON.stringify({ meetingLink }),
-  });
+  const res = await fetchWithAuth(
+    `/api/v1/admin/sessions/${sessionId}/meeting-link`,
+    getToken,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ meetingLink }),
+    },
+  );
+
   return res.json();
 }
 
-export async function adminCreateMentor(token: string, data: CreateMentorPayload): Promise<Mentor> {
+export async function adminCreateMentor(
+  getToken: GetTokenFn,
+  data: CreateMentorPayload,
+): Promise<Mentor> {
   const payload = {
     ...data,
     startYear: data.startYear ? String(data.startYear) : undefined,
-    experienceYears: data.experienceYears ? Number(data.experienceYears) : 0,
+    experienceYears: data.experienceYears
+      ? Number(data.experienceYears)
+      : 0,
   };
-  const res = await fetchWithAuth("/api/v1/mentors", token, {
+
+  const res = await fetchWithAuth("/api/v1/mentors", getToken, {
     method: "POST",
     body: JSON.stringify(payload),
   });
+
   return res.json();
 }
 
-export async function adminCreateSubject(token: string, data: CreateSubjectPayload): Promise<unknown> {
-  const res = await fetchWithAuth("/api/v1/subjects", token, {
+export async function adminCreateSubject(
+  getToken: GetTokenFn,
+  data: CreateSubjectPayload,
+): Promise<unknown> {
+  const res = await fetchWithAuth("/api/v1/subjects", getToken, {
     method: "POST",
     body: JSON.stringify(data),
   });
+
   return res.json();
 }

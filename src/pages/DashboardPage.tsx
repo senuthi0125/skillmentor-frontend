@@ -37,11 +37,13 @@ export default function DashboardPage() {
     async function fetchEnrollments() {
       if (!user) return;
 
-      const token = await getToken({ template: "skillmentor-auth" });
-      if (!token) return;
-
       try {
-        const data = await getMyEnrollments(token);
+        const token = await getToken();
+        console.log("CLERK TOKEN =", token);
+
+        if (!token) return;
+
+        const data = await getMyEnrollments(getToken);
         setEnrollments(data);
       } catch (err) {
         console.error("Failed to fetch enrollments", err);
@@ -56,18 +58,23 @@ export default function DashboardPage() {
   async function handleSubmitReview() {
     if (!reviewDialog.sessionId || reviewRating === 0) return;
 
-    const token = await getToken({ template: "skillmentor-auth" });
-    if (!token) return;
-
-    setReviewSubmitting(true);
-
     try {
-      await submitSessionReview(token, reviewDialog.sessionId, {
+      const token = await getToken();
+      console.log("CLERK TOKEN =", token);
+
+      if (!token) {
+        setReviewNotification("No authentication token found.");
+        return;
+      }
+
+      setReviewSubmitting(true);
+
+      await submitSessionReview(getToken, reviewDialog.sessionId, {
         rating: reviewRating,
         review: reviewText,
       });
 
-      const data = await getMyEnrollments(token);
+      const data = await getMyEnrollments(getToken);
       setEnrollments(data);
 
       setReviewNotification("Review submitted successfully!");

@@ -58,7 +58,7 @@ export default function CreateSubjectPage() {
     if (!token) return;
     setSubmitting(true);
     try {
-      await adminCreateSubject(token, form as CreateSubjectPayload);
+      await adminCreateSubject(getToken, form as CreateSubjectPayload);
       setNotification({ message: "Subject created successfully!", type: "success" });
       setForm({});
       setTimeout(() => navigate("/admin"), 1500);

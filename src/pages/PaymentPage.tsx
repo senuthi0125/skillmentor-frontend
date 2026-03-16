@@ -48,7 +48,7 @@ export default function PaymentPage() {
       const token = await getToken({ template: "skillmentor-auth" });
       if (!token) throw new Error("Not authenticated");
 
-      await enrollInSession(token, {
+      await enrollInSession(getToken, {
         mentorId: Number(mentorId),
         subjectId: Number(subjectId),
         sessionAt: date,

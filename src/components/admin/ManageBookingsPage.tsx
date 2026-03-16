@@ -66,7 +66,7 @@ export default function ManageBookingsPage() {
         return;
       }
 
-      setSessions(await adminGetAllSessions(token));
+      setSessions(await adminGetAllSessions(getToken));
     } catch {
       setError("Failed to load sessions");
     } finally {
@@ -88,7 +88,7 @@ export default function ManageBookingsPage() {
 
     setActionLoading(id);
     try {
-      const updated = await adminConfirmPayment(token, id);
+      const updated = await adminConfirmPayment(getToken, id);
       setSessions((prev) => prev.map((s) => (s.id === id ? updated : s)));
       notify("Payment confirmed successfully.");
     } catch (err: unknown) {
@@ -107,7 +107,7 @@ export default function ManageBookingsPage() {
 
     setActionLoading(id);
     try {
-      const updated = await adminMarkComplete(token, id);
+      const updated = await adminMarkComplete(getToken, id);
       setSessions((prev) => prev.map((s) => (s.id === id ? updated : s)));
       notify("Session marked as completed.");
     } catch (err: unknown) {
@@ -128,7 +128,7 @@ export default function ManageBookingsPage() {
 
     setActionLoading(meetingDialog.sessionId);
     try {
-      const updated = await adminSetMeetingLink(token, meetingDialog.sessionId, meetingLinkInput);
+      const updated = await adminSetMeetingLink(getToken, meetingDialog.sessionId, meetingLinkInput);
       setSessions((prev) =>
         prev.map((s) => (s.id === meetingDialog.sessionId ? updated : s))
       );

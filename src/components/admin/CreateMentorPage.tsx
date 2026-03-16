@@ -48,7 +48,7 @@ export default function CreateMentorPage() {
 
     setSubmitting(true);
     try {
-      const mentor = await adminCreateMentor(token, form as CreateMentorPayload);
+      const mentor = await adminCreateMentor(getToken, form as CreateMentorPayload);
       setCreatedMentor(mentor);
       setForm({ isCertified: false, experienceYears: 0 });
       setNotification({ message: "Mentor created successfully!", type: "success" });

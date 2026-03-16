@@ -15,7 +15,7 @@ export default function AdminOverviewPage() {
       console.log("ADMIN TOKEN:", token);
       if (!token) return;
       try {
-        setSessions(await adminGetAllSessions(token));
+        setSessions(await adminGetAllSessions(getToken));
       } catch (err) {
         console.error(err);
       } finally {
