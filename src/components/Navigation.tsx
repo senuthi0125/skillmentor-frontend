@@ -12,7 +12,8 @@ export function Navigation() {
   const { user } = useUser();
   const [isOpen, setIsOpen] = useState(false);
 
-  const isAdmin = (user?.publicMetadata as { role?: string })?.role === "admin";
+  const isAdmin =
+    String((user?.publicMetadata as { role?: string })?.role || "").toUpperCase() === "ADMIN";
 
   const NavItems = ({ mobile = false }: { mobile?: boolean }) => (
     <nav
@@ -51,6 +52,7 @@ export function Navigation() {
               Dashboard
             </Button>
           </Link>
+
           {isAdmin && (
             <Link
               to="/admin"
@@ -63,6 +65,7 @@ export function Navigation() {
               </Button>
             </Link>
           )}
+
           <div className={cn("flex items-center", mobile && "w-full justify-center")}>
             <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
           </div>
@@ -78,6 +81,7 @@ export function Navigation() {
               Login
             </Button>
           </SignInButton>
+
           <Link to="/login">
             <Button
               className={cn(
@@ -101,6 +105,7 @@ export function Navigation() {
             <img src={SkillMentorLogo} alt="SkillMentor Logo" className="size-12 rounded-full" />
             <span className="font-semibold text-xl">SkillMentor</span>
           </Link>
+
           <div className="ml-6 hidden md:block">
             <NavItems />
           </div>
@@ -118,6 +123,7 @@ export function Navigation() {
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
+
             <SheetContent side="right" className="w-[300px] bg-black text-white p-6">
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between mb-8">
@@ -126,9 +132,11 @@ export function Navigation() {
                     <span className="font-semibold text-lg">SkillMentor</span>
                   </Link>
                 </div>
+
                 <div className="space-y-6 flex-1">
                   <NavItems mobile />
                 </div>
+
                 <div className="pt-6 border-t border-white/10">
                   <AuthButtons mobile />
                 </div>
