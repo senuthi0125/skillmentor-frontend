@@ -24,41 +24,65 @@ function App() {
         </Route>
 
         <Route
+          path="/"
+          element={
+            <Layout>
+              <HomePage />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/login"
+          element={
+            <Layout>
+              <LoginPage />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/mentors/:mentorId"
+          element={
+            <Layout>
+              <MentorProfilePage />
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            <Layout>
+              <SignedIn>
+                <DashboardPage />
+              </SignedIn>
+              <SignedOut>
+                <LoginPage />
+              </SignedOut>
+            </Layout>
+          }
+        />
+
+        <Route
+          path="/payment/:sessionId"
+          element={
+            <Layout>
+              <SignedIn>
+                <PaymentPage />
+              </SignedIn>
+              <SignedOut>
+                <LoginPage />
+              </SignedOut>
+            </Layout>
+          }
+        />
+
+        <Route
           path="*"
           element={
             <Layout>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/mentors/:mentorId" element={<MentorProfilePage />} />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <>
-                      <SignedIn>
-                        <DashboardPage />
-                      </SignedIn>
-                      <SignedOut>
-                        <LoginPage />
-                      </SignedOut>
-                    </>
-                  }
-                />
-                <Route
-                  path="/payment/:sessionId"
-                  element={
-                    <>
-                      <SignedIn>
-                        <PaymentPage />
-                      </SignedIn>
-                      <SignedOut>
-                        <LoginPage />
-                      </SignedOut>
-                    </>
-                  }
-                />
-                <Route path="*" element={<LoginPage />} />
-              </Routes>
+              <LoginPage />
             </Layout>
           }
         />

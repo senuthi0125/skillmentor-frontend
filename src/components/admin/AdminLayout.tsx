@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { label: "Overview",        href: "/admin",                icon: LayoutDashboard },
-  { label: "Manage Bookings", href: "/admin/bookings",        icon: CalendarCheck   },
-  { label: "Create Mentor",   href: "/admin/mentors/create",  icon: Users           },
-  { label: "Create Subject",  href: "/admin/subjects/create", icon: BookOpen        },
+  { label: "Overview", href: "/admin", icon: LayoutDashboard },
+  { label: "Manage Bookings", href: "/admin/bookings", icon: CalendarCheck },
+  { label: "Create Mentor", href: "/admin/mentors/create", icon: Users },
+  { label: "Create Subject", href: "/admin/subjects/create", icon: BookOpen },
 ];
 
 export default function AdminLayout() {
@@ -17,11 +17,15 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isAdmin = (user?.publicMetadata as { role?: string })?.role === "admin";
+  const isAdmin =
+    String((user?.publicMetadata as { role?: string })?.role || "").toUpperCase() === "ADMIN";
 
   useEffect(() => {
     if (!isLoaded) return;
-    if (!user) { navigate("/login"); return; }
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     if (!isAdmin) navigate("/dashboard");
   }, [isLoaded, user, isAdmin, navigate]);
 
@@ -42,11 +46,14 @@ export default function AdminLayout() {
           <ShieldCheck className="h-6 w-6 text-primary" />
           <span className="font-bold text-lg">Admin Panel</span>
         </div>
+
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => {
-            const isActive = item.href === "/admin"
-              ? location.pathname === "/admin"
-              : location.pathname.startsWith(item.href);
+            const isActive =
+              item.href === "/admin"
+                ? location.pathname === "/admin"
+                : location.pathname.startsWith(item.href);
+
             return (
               <Link
                 key={item.href}
@@ -64,6 +71,7 @@ export default function AdminLayout() {
             );
           })}
         </nav>
+
         <div className="px-3 py-4 border-t border-gray-100">
           <Link to="/dashboard">
             <Button variant="ghost" className="w-full justify-start gap-3 text-gray-600 hover:text-gray-900">
@@ -73,6 +81,7 @@ export default function AdminLayout() {
           </Link>
         </div>
       </aside>
+
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
