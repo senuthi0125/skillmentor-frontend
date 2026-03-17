@@ -208,7 +208,7 @@ export default function DashboardPage() {
                     className="h-7 text-xs bg-white/20 hover:bg-white/30 text-white border-0 w-full"
                     onClick={() => openReviewDialog(enrollment.id)}
                   >
-                    ✍️ Write a Review
+                    Write a Review
                   </Button>
                 )}
               </div>

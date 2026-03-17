@@ -69,7 +69,7 @@ export default function CreateSubjectPage() {
     }
   }
 
-  const selectedMentor = mentors.find((m) => m.id === form.mentorId);
+  const selectedMentor = mentors.find((m) => Number(m.mentorId) === form.mentorId);
 
   return (
     <div className="p-8 max-w-2xl">
@@ -108,11 +108,14 @@ export default function CreateSubjectPage() {
             {mentorsLoading ? (
               <p className="text-sm text-muted-foreground">Loading mentors…</p>
             ) : (
-              <Select value={form.mentorId ? String(form.mentorId) : ""} onValueChange={(val) => set("mentorId", Number(val))}>
+              <Select
+                value={form.mentorId ? String(form.mentorId) : ""}
+                onValueChange={(val) => set("mentorId", Number(val))}
+              >
                 <SelectTrigger><SelectValue placeholder="Select a mentor…" /></SelectTrigger>
                 <SelectContent>
                   {mentors.map((m) => (
-                    <SelectItem key={m.id} value={String(m.id)}>
+                    <SelectItem key={m.id} value={String(m.mentorId)}>
                       {m.firstName} {m.lastName}{m.title ? ` — ${m.title}` : ""}
                     </SelectItem>
                   ))}

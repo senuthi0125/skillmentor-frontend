@@ -7,7 +7,7 @@ import type {
 } from "@/types";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
+  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:8081";
 
 type GetTokenFn = (options?: { template?: string }) => Promise<string | null>;
 
@@ -39,7 +39,7 @@ async function fetchWithAuth(
       const error = await cloned.json();
       message = error.message || error.error || message;
     } catch {
-      // ignore JSON parse errors
+      // ignore parse errors
     }
 
     if (res.status === 401) {
@@ -52,7 +52,7 @@ async function fetchWithAuth(
   return res;
 }
 
-// Public route without auth
+// Public
 export async function getPublicMentors(
   page = 0,
   size = 10,
@@ -68,7 +68,17 @@ export async function getPublicMentors(
   return res.json();
 }
 
-// Enrollments
+export async function getMentorProfile(mentorId: number) {
+  const res = await fetch(`${API_BASE_URL}/api/v1/mentors/${mentorId}`);
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch mentor profile");
+  }
+
+  return res.json();
+}
+
+// Student
 export async function enrollInSession(
   getToken: GetTokenFn,
   data: {
@@ -104,20 +114,11 @@ export async function submitSessionReview(
   });
 }
 
-export async function getMentorProfile(mentorId: number) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/mentors/${mentorId}`);
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch mentor profile");
-  }
-
-  return res.json();
-}
-
+// Admin
 export async function adminGetAllSessions(
   getToken: GetTokenFn,
 ): Promise<AdminSession[]> {
-  const res = await fetchWithAuth("/api/v1/admin/sessions", getToken);
+  const res = await fetchWithAuth("/api/v1/sessions", getToken);
   return res.json();
 }
 
@@ -126,13 +127,12 @@ export async function adminConfirmPayment(
   sessionId: number,
 ): Promise<AdminSession> {
   const res = await fetchWithAuth(
-    `/api/v1/admin/sessions/${sessionId}/confirm-payment`,
+    `/api/v1/sessions/${sessionId}/confirm-payment`,
     getToken,
     {
       method: "PATCH",
     },
   );
-
   return res.json();
 }
 
@@ -141,13 +141,12 @@ export async function adminMarkComplete(
   sessionId: number,
 ): Promise<AdminSession> {
   const res = await fetchWithAuth(
-    `/api/v1/admin/sessions/${sessionId}/complete`,
+    `/api/v1/sessions/${sessionId}/complete`,
     getToken,
     {
       method: "PATCH",
     },
   );
-
   return res.json();
 }
 
@@ -157,14 +156,13 @@ export async function adminSetMeetingLink(
   meetingLink: string,
 ): Promise<AdminSession> {
   const res = await fetchWithAuth(
-    `/api/v1/admin/sessions/${sessionId}/meeting-link`,
+    `/api/v1/sessions/${sessionId}/meeting-link`,
     getToken,
     {
       method: "PATCH",
       body: JSON.stringify({ meetingLink }),
     },
   );
-
   return res.json();
 }
 

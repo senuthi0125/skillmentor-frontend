@@ -1,5 +1,3 @@
-// ── Core entities ─────────────────────────────────────────────────────────────
-
 export interface Subject {
   id: number;
   subjectName: string;
@@ -26,7 +24,6 @@ export interface Mentor {
   subjects: Subject[];
 }
 
-// Feature 2: enriched mentor profile (GET /api/v1/mentors/{id})
 export interface SubjectWithEnrollment extends Subject {
   enrollmentCount: number;
 }
@@ -66,19 +63,23 @@ export interface User {
   email: string;
 }
 
-// ── Admin ─────────────────────────────────────────────────────────────────────
-
 export interface AdminSession {
   id: number;
-  studentName: string;
-  studentEmail: string;
-  mentorName: string;
-  subjectName: string;
+  studentId?: number;
+  mentorId?: number;
+  subjectId?: number;
+  studentName?: string;
+  studentEmail?: string;
+  mentorName?: string;
+  subjectName?: string;
   sessionAt: string;
   durationMinutes: number;
   sessionStatus: string;
   paymentStatus: string;
   meetingLink: string | null;
+  sessionNotes?: string | null;
+  studentReview?: string | null;
+  studentRating?: number | null;
   createdAt: string;
 }
 

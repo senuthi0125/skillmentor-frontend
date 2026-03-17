@@ -1,12 +1,28 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import { adminGetAllSessions, adminConfirmPayment, adminMarkComplete, adminSetMeetingLink } from "@/lib/api";
+import {
+  adminGetAllSessions,
+  adminConfirmPayment,
+  adminMarkComplete,
+  adminSetMeetingLink,
+} from "@/lib/api";
 import type { AdminSession } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, Link as LinkIcon, Search, ChevronUp, ChevronDown } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  CheckCircle,
+  Link as LinkIcon,
+  Search,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 
 type SortField = keyof AdminSession | null;
 type SortDir = "asc" | "desc";
@@ -24,6 +40,74 @@ function statusBadgeClass(status: string) {
     default:
       return "bg-gray-100 text-gray-800 border-gray-200";
   }
+}
+
+function buildFullName(person: any) {
+  if (!person) return "";
+  if (person.name) return String(person.name).trim();
+
+  const firstName = person.firstName ?? "";
+  const lastName = person.lastName ?? "";
+  return `${firstName} ${lastName}`.trim();
+}
+
+function normalizeSession(raw: any): AdminSession {
+  return {
+    id: Number(raw?.id ?? 0),
+    studentId: raw?.studentId ?? raw?.student?.id,
+    mentorId: raw?.mentorId ?? raw?.mentor?.id,
+    subjectId: raw?.subjectId ?? raw?.subject?.id,
+
+    studentName:
+      raw?.studentName ||
+      buildFullName(raw?.student) ||
+      raw?.student?.email ||
+      "—",
+
+    studentEmail:
+      raw?.studentEmail ||
+      raw?.student?.email ||
+      "",
+
+    mentorName:
+      raw?.mentorName ||
+      buildFullName(raw?.mentor) ||
+      raw?.mentor?.email ||
+      "—",
+
+    subjectName:
+      raw?.subjectName ||
+      raw?.subject?.subjectName ||
+      raw?.subject?.name ||
+      "—",
+
+    sessionAt:
+      raw?.sessionAt ||
+      raw?.scheduledAt ||
+      "",
+
+    durationMinutes:
+      Number(raw?.durationMinutes ?? raw?.duration ?? 0),
+
+    sessionStatus:
+      raw?.sessionStatus ||
+      raw?.status ||
+      "",
+
+    paymentStatus:
+      raw?.paymentStatus ||
+      raw?.payment?.status ||
+      "",
+
+    meetingLink: raw?.meetingLink ?? null,
+    sessionNotes: raw?.sessionNotes ?? null,
+    studentReview: raw?.studentReview ?? null,
+    studentRating:
+      raw?.studentRating !== undefined && raw?.studentRating !== null
+        ? Number(raw.studentRating)
+        : null,
+    createdAt: raw?.createdAt ?? "",
+  };
 }
 
 const PAGE_SIZE = 10;
@@ -66,7 +150,9 @@ export default function ManageBookingsPage() {
         return;
       }
 
-      setSessions(await adminGetAllSessions(getToken));
+      const data = await adminGetAllSessions(getToken);
+      const normalized = Array.isArray(data) ? data.map(normalizeSession) : [];
+      setSessions(normalized);
     } catch {
       setError("Failed to load sessions");
     } finally {
@@ -89,7 +175,8 @@ export default function ManageBookingsPage() {
     setActionLoading(id);
     try {
       const updated = await adminConfirmPayment(getToken, id);
-      setSessions((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      const normalized = normalizeSession(updated);
+      setSessions((prev) => prev.map((s) => (s.id === id ? normalized : s)));
       notify("Payment confirmed successfully.");
     } catch (err: unknown) {
       notify((err as Error).message || "Failed to confirm payment.", "error");
@@ -108,7 +195,8 @@ export default function ManageBookingsPage() {
     setActionLoading(id);
     try {
       const updated = await adminMarkComplete(getToken, id);
-      setSessions((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      const normalized = normalizeSession(updated);
+      setSessions((prev) => prev.map((s) => (s.id === id ? normalized : s)));
       notify("Session marked as completed.");
     } catch (err: unknown) {
       notify((err as Error).message || "Failed to mark complete.", "error");
@@ -128,9 +216,15 @@ export default function ManageBookingsPage() {
 
     setActionLoading(meetingDialog.sessionId);
     try {
-      const updated = await adminSetMeetingLink(getToken, meetingDialog.sessionId, meetingLinkInput);
+      const updated = await adminSetMeetingLink(
+        getToken,
+        meetingDialog.sessionId,
+        meetingLinkInput,
+      );
+      const normalized = normalizeSession(updated);
+
       setSessions((prev) =>
-        prev.map((s) => (s.id === meetingDialog.sessionId ? updated : s))
+        prev.map((s) => (s.id === meetingDialog.sessionId ? normalized : s))
       );
       notify("Meeting link updated.");
       setMeetingDialog({ open: false, sessionId: null });
@@ -175,6 +269,18 @@ export default function ManageBookingsPage() {
 
     if (sortField) {
       result = [...result].sort((a, b) => {
+        if (sortField === "id" || sortField === "durationMinutes") {
+          const aNum = Number(a[sortField] ?? 0);
+          const bNum = Number(b[sortField] ?? 0);
+          return sortDir === "asc" ? aNum - bNum : bNum - aNum;
+        }
+
+        if (sortField === "sessionAt" || sortField === "createdAt") {
+          const aTime = a[sortField] ? new Date(String(a[sortField])).getTime() : 0;
+          const bTime = b[sortField] ? new Date(String(b[sortField])).getTime() : 0;
+          return sortDir === "asc" ? aTime - bTime : bTime - aTime;
+        }
+
         const cmp = String(a[sortField] ?? "").localeCompare(String(b[sortField] ?? ""));
         return sortDir === "asc" ? cmp : -cmp;
       });
@@ -287,9 +393,9 @@ export default function ManageBookingsPage() {
                   paginated.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 text-gray-400">#{s.id}</td>
-                      <td className="px-4 py-3 font-medium">{s.studentName}</td>
-                      <td className="px-4 py-3">{s.mentorName}</td>
-                      <td className="px-4 py-3">{s.subjectName}</td>
+                      <td className="px-4 py-3 font-medium">{s.studentName || "—"}</td>
+                      <td className="px-4 py-3">{s.mentorName || "—"}</td>
+                      <td className="px-4 py-3">{s.subjectName || "—"}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {s.sessionAt ? new Date(s.sessionAt).toLocaleString() : "—"}
                       </td>
@@ -306,7 +412,7 @@ export default function ManageBookingsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 flex-wrap">
-                          {s.paymentStatus === "pending" && (
+                          {s.paymentStatus?.toLowerCase() === "pending" && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -319,7 +425,7 @@ export default function ManageBookingsPage() {
                             </Button>
                           )}
 
-                          {s.sessionStatus === "confirmed" && (
+                          {s.sessionStatus?.toLowerCase() === "confirmed" && (
                             <Button
                               size="sm"
                               variant="outline"
