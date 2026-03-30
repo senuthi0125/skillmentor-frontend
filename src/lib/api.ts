@@ -7,16 +7,97 @@ import type {
 } from "@/types";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:8081";
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:8081";
 
-type GetTokenFn = (options?: { template?: string }) => Promise<string | null>;
+type GetTokenFn = (options?: {
+  template?: string;
+  skipCache?: boolean;
+}) => Promise<string | null>;
+
+function buildFullName(obj: any): string {
+  if (!obj) return "";
+
+  if (typeof obj.name === "string" && obj.name.trim()) {
+    return obj.name.trim();
+  }
+
+  const firstName = typeof obj.firstName === "string" ? obj.firstName.trim() : "";
+  const lastName = typeof obj.lastName === "string" ? obj.lastName.trim() : "";
+
+  return `${firstName} ${lastName}`.trim();
+}
+
+function normalizeAdminSession(raw: any): AdminSession {
+  const studentName =
+    raw?.studentName ??
+    buildFullName(raw?.student) ??
+    raw?.student?.email ??
+    "";
+
+  const mentorName =
+    raw?.mentorName ??
+    buildFullName(raw?.mentor) ??
+    raw?.mentor?.email ??
+    "";
+
+  const subjectName =
+    raw?.subjectName ??
+    raw?.subject?.subjectName ??
+    raw?.subject?.name ??
+    "";
+
+  const paymentStatus =
+    raw?.paymentStatus ??
+    raw?.payment?.status ??
+    "";
+
+  const sessionStatus =
+    raw?.sessionStatus ??
+    raw?.status ??
+    "";
+
+  return {
+    id: Number(raw?.id ?? 0),
+    studentId: raw?.studentId ?? raw?.student?.id ?? undefined,
+    mentorId: raw?.mentorId ?? raw?.mentor?.id ?? undefined,
+    subjectId: raw?.subjectId ?? raw?.subject?.id ?? undefined,
+    studentName,
+    studentEmail:
+      raw?.studentEmail ??
+      raw?.student?.email ??
+      "",
+    mentorName,
+    subjectName,
+    sessionAt:
+      raw?.sessionAt ??
+      raw?.scheduledAt ??
+      raw?.dateTime ??
+      "",
+    durationMinutes: Number(raw?.durationMinutes ?? raw?.duration ?? 0),
+    sessionStatus: String(sessionStatus),
+    paymentStatus: String(paymentStatus),
+    meetingLink: raw?.meetingLink ?? null,
+    sessionNotes: raw?.sessionNotes ?? null,
+    studentReview: raw?.studentReview ?? null,
+    studentRating:
+      raw?.studentRating !== undefined && raw?.studentRating !== null
+        ? Number(raw.studentRating)
+        : null,
+    createdAt: raw?.createdAt ?? "",
+  };
+}
 
 async function fetchWithAuth(
   endpoint: string,
   getToken: GetTokenFn,
   options: RequestInit = {},
 ): Promise<Response> {
-  const token = await getToken({ template: "skillmentor-auth" });
+  const token = await getToken({
+    template: "skillmentor-auth",
+    skipCache: true,
+  });
 
   if (!token) {
     throw new Error("Authentication token not found. Please sign in again.");
@@ -119,7 +200,10 @@ export async function adminGetAllSessions(
   getToken: GetTokenFn,
 ): Promise<AdminSession[]> {
   const res = await fetchWithAuth("/api/v1/sessions", getToken);
-  return res.json();
+  const data = await res.json();
+
+  if (!Array.isArray(data)) return [];
+  return data.map(normalizeAdminSession);
 }
 
 export async function adminConfirmPayment(
@@ -133,7 +217,9 @@ export async function adminConfirmPayment(
       method: "PATCH",
     },
   );
-  return res.json();
+
+  const data = await res.json();
+  return normalizeAdminSession(data);
 }
 
 export async function adminMarkComplete(
@@ -147,7 +233,9 @@ export async function adminMarkComplete(
       method: "PATCH",
     },
   );
-  return res.json();
+
+  const data = await res.json();
+  return normalizeAdminSession(data);
 }
 
 export async function adminSetMeetingLink(
@@ -163,7 +251,9 @@ export async function adminSetMeetingLink(
       body: JSON.stringify({ meetingLink }),
     },
   );
-  return res.json();
+
+  const data = await res.json();
+  return normalizeAdminSession(data);
 }
 
 export async function adminCreateMentor(
